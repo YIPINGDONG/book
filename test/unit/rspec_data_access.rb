@@ -110,10 +110,43 @@ describe DataAccess do
 
         context "book is new" do
           it "should add it to database but leave remote cache unchanged" do
-              # .... to be completed ....
+             
+              expect(@sqlite_database).to receive(:updateStock).with(@book1)# .... to be completed ....
+               expect(@dalli_client).to receive(:get).with("v_#{@book1.isbn}" ).
+                   and_return(nil)
+                    @data_access.updateStock(@book1) 
          end
        end 
+             context "related book is in the remote cache" do
+          it "should update in the remote cache and database" do
+            expect(@sqlite_database).to receive(:updateStock).with(@book5)
+            expect(@dalli_client).to receive(:get).with("v_#{@book1.isbn}" ).
+                   and_return(2)
+            expect(@dalli_client).to receive(:set).with("v_#{@book1.isbn}",3)
+            expect(@dalli_client).to receive(:set).with("#{@book1.isbn}_3",@book1.to_cache )                 
+            @data_access.updateStock(@book5)   
+          end
+       end 
+       context "the local cache has the  new book" do 
+        before(:each) do
+            expect(@dalli_client).to receive(:get).with('v_1111').and_return(2)
+            expect(@dalli_client).to receive(:get).with('1111_5').and_return  @book5.to_cache
+            @data_access.isbnSearch('1111') 
+        end     
          # ..... to be completed .......
+               context "it is also in remote cache" do
+          it "should update in both cache and database" do
+            expect(@sqlite_database).to receive(:updateStock).with(@book5)
+            expect(@dalli_client).to receive(:get).with("v_#{@book1.isbn}" ).
+                   and_return(3)
+            expect(@dalli_client).to receive(:set).with("v_#{@book1.isbn}",)
+            expect(@dalli_client).to receive(:set).with("#{@book1.isbn}_4",@book1.to_cache )                 
+            @data_access.updateStock(@book1) 
+            expect(@dalli_client).to receive(:get).with("v_#{@book1.isbn}" ).
+                   and_return(4)  
+             @data_access.isbnSearch(@book1.isbn)                  
+           end
+       end
     end  
 
 end
